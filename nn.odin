@@ -3,13 +3,13 @@ package main
 import "core:fmt"
 import "core:math"
 import "core:math/rand"
-import "core:slice"
 
 MatrixElement :: distinct f32
 
 Mat :: struct {
     rows: int,
     cols: int,
+    stride: int,
     data: []MatrixElement,
 }
 
@@ -18,6 +18,7 @@ mat_create :: proc(rows, cols: int, allocator := context.allocator) -> Mat {
     m := Mat {
         rows = rows,
         cols = cols,
+        stride = cols,
         data = make([]MatrixElement, rows * cols, allocator),
     }
     assert(m.data != nil)
@@ -45,7 +46,11 @@ mat_delete_many :: proc(mats: ..Mat, allocator := context.allocator) {
 }
 
 mat_fill :: proc(dest: Mat, value: MatrixElement) {
-    slice.fill(dest.data, value)
+    for i in 0..<dest.rows {
+        for j in 0..<dest.cols {
+            mat_set(dest, i, j, value)
+        }
+    }
 }
 
 mat_rand :: proc(m: Mat, low: f32 = 0, high: f32 = 1) {
@@ -58,10 +63,38 @@ mat_rand :: proc(m: Mat, low: f32 = 0, high: f32 = 1) {
 }
 
 mat_get :: #force_inline proc(m: Mat, i, j: int) -> MatrixElement {
-    return  m.data[i * m.cols + j] 
+    return  m.data[i * m.stride + j] 
 }
 mat_set :: #force_inline proc(m: Mat, i, j: int, v: MatrixElement) {
-    m.data[i * m.cols + j] = v
+    m.data[i * m.stride + j] = v
+}
+
+mat_row :: proc(m: Mat, i: int) -> Mat {
+    return Mat {
+        rows = 1,
+        cols = m.cols,
+        stride = m.stride,
+        data = m.data[i * m.stride :],
+    }
+}
+
+mat_copy :: proc(dest, src : Mat) {
+    assert(dest.rows == src.rows && dest.cols == src.cols)
+    for i in 0..<dest.rows {
+        for j in 0..<dest.cols {
+            mat_set(dest, i, j, mat_get(src, i, j))
+        }
+    }
+}
+
+// Unused
+mat_set_array :: proc(dest: Mat, src: []MatrixElement) {
+    assert(dest.rows * dest.cols == len(src))
+    for i in 0..<dest.rows {
+        for j in 0..<dest.cols {
+            mat_set(dest, i, j, src[i * dest.cols + j])
+        }
+    }
 }
 
 mat_mul :: proc(dest: Mat, a, b: Mat) {
@@ -82,8 +115,10 @@ mat_add :: proc(dest: Mat, a, b: Mat) {
     assert(a.rows == b.rows)
     assert(a.cols == b.cols)
     assert(dest.rows == a.rows && dest.cols == a.cols)
-    for i in 0..<len(a.data) {
-        dest.data[i] = a.data[i] + b.data[i]
+    for i in 0..<dest.rows {
+        for j in 0..<dest.cols {
+            mat_set(dest, i, j, mat_get(a, i, j) + mat_get(b, i, j))
+        }
     }
 }
 
@@ -116,7 +151,9 @@ sigmoid :: proc(x: MatrixElement) -> MatrixElement {
 }
 
 mat_sigmoid :: proc(m: Mat) {
-    for i in 0..<len(m.data) {
-        m.data[i] = sigmoid(m.data[i])
+    for i in 0..<m.rows {
+        for j in 0..<m.cols {
+            mat_set(m, i, j, sigmoid(mat_get(m, i, j)))
+        }
     }
 }
