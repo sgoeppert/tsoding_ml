@@ -10,24 +10,14 @@
             "args": [
                 "run",
                 ".",
-                // "-debug",
                 "-vet",
                 "-vet-style",
-                // "-use-separate-modules",
-                "-show-timings",
             ],
-            "group": "build",
-            // "problemMatcher": {
-            //     "owner": "odin",
-            //     "fileLocation": ["absolute"],
-            //     "pattern": {
-            //         "regexp": "^(.+)\\((\\d+):(\\d+)\\) (.+)$",
-            //         "file": 1,
-            //         "line": 2,
-            //         "column": 3,
-            //         "message": 4
-            //     }
-            // }
-        },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
     ]
 }
